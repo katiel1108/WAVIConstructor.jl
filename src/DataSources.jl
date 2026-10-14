@@ -16,7 +16,7 @@ export BedSource, SurfaceTempSource, TemperatureSource, VelocitySource
 export AccumulationSource, DhDtSource, BasinSource
 # Concrete source singletons
 export BedMachineV3, ALBMAPv1, FrankTemps, BISICLESTemps
-export MEaSUREs, ArthernAccumulation, SmithDhdt, ZwallyBasins
+export MEaSUREs, NetCDFVelocity, ArthernAccumulation, SmithDhdt, ZwallyBasins
 # Cross-cutting sentinel
 export NoData
 
@@ -92,6 +92,16 @@ default_path(::BISICLESTemps) = "Data/antarctica-bisicles-xyzT-8km.nc"
 """MEaSUREs Antarctic ice velocity."""
 struct MEaSUREs <: VelocitySource end
 default_path(::MEaSUREs) = "Data/Antarctica_ice_velocity_2014_2015_1km_v01.nc"
+
+"""Generic NetCDF ice velocity source with configurable variable names."""
+Base.@kwdef struct NetCDFVelocity <: VelocitySource
+    vx_name::String = "VX"
+    vy_name::String = "VY"
+    x_name::String  = "x"
+    y_name::String  = "y"
+    scale::Float64  = 1.0
+end
+default_path(::NetCDFVelocity) = "Data/velocity.nc"  
 
 """Arthern AMSR accumulation map."""
 struct ArthernAccumulation <: AccumulationSource end

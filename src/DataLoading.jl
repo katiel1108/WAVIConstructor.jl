@@ -142,6 +142,54 @@ function load_data(::MEaSUREs, filename::String)
     end
 end
 
+"""
+    NetCDFVelocity(; vx_name="VX", vy_name="VY", x_name="x", y_name="y", scale=1.0)
+
+Generic velocity source for any NetCDF file on a regular x/y grid.
+Variable names are configurable; `scale` multiplies both velocity
+components (e.g. to convert units to m/yr).
+"""
+
+"""
+    load_data(src::NetCDFVelocity, filename::String)
+
+Load ice-velocity data from a NetCDF file using the variable names in `src`.
+
+# Returns
+A `NamedTuple`: `(xx, yy, vx, vy)`
+"""
+
+# Convert any `missing` entries to NaN and make the array plain Float64
+_missing_to_nan(a) = Float64.(coalesce.(a, NaN))
+
+function load_data(src::NetCDFVelocity, filename::String)
+    ds = NCDataset(filename)
+    try
+        for name in (src.x_name, src.y_name, src.vx_name, src.vy_name)
+            haskey(ds, name) || error(
+                "Variable \"$name\" not found in $filename. " *
+                "Available variables: $(join(keys(ds), ", "))")
+        end
+
+        x  = Array(ds[src.x_name])
+        y  = Array(ds[src.y_name])
+        vx = _missing_to_nan(Array(ds[src.vx_name]))
+        vy = _missing_to_nan(Array(ds[src.vy_name]))
+
+        if src.scale != 1.0
+            vx = vx .* src.scale
+            vy = vy .* src.scale
+        end
+
+        # Create coordinate grids (equivalent to MATLAB's ndgrid)
+        xx = repeat(x, 1, length(y))
+        yy = repeat(y', length(x), 1)
+
+        return (xx = xx, yy = yy, vx = vx, vy = vy)
+    finally
+        close(ds)
+    end
+end
 
 """
     geotiff_read_axis_only(filename::String; pixel_subset=nothing, map_subset=nothing)
