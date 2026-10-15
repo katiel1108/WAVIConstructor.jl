@@ -36,7 +36,7 @@ Julia port of MATLAB get_setup_data function.
 - Extrapolates temperature to include surface (sigma=0) and base (sigma=1)
 - Writes output files for Julia inversion in the requested format(s)
 """
-function setup_wavi_data(params; output_path = "outputs", edge = 3, output_format = nothing)
+function setup_wavi_data(params, output_path = "outputs", edge = 3, output_format = nothing)
     # Validate subsampling parameters
     sub_samp = get(params, :sub_samp, 8)
     sub_samp_index_x = get(params, :sub_samp_index_x, 0)
@@ -228,7 +228,7 @@ function setup_wavi_data(params; output_path = "outputs", edge = 3, output_forma
     end
 
     # Write output files in the requested format(s)
-    write_output(Gh, Gu, Gv, output_path; format = fmt)
+    write_output(Gh, Gu, Gv, params[:output_path]; format = fmt)
 
     return Gh, Gu, Gv, Gc
 end
