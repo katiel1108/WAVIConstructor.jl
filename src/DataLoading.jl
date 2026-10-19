@@ -171,10 +171,14 @@ function load_data(src::NetCDFVelocity, filename::String)
                 "Available variables: $(join(keys(ds), ", "))")
         end
 
-        x  = Array(ds[src.x_name])
-        y  = Array(ds[src.y_name])
-        vx = _missing_to_nan(Array(ds[src.vx_name]))
+        vel_x  = Array(ds[src.x_name])
+        vel_y  = Array(ds[src.y_name])
+        vx = _missing_to_nan(Array(ds[src.vx_name])) 
         vy = _missing_to_nan(Array(ds[src.vy_name]))
+
+        # check coordinates of data match (x,y) as expected
+        size(vx) == (length(vel_x), length(vel_y)) ||
+            error("vx has size $(size(vx)), expected ($(length(vel_x)), $(length(vel_y)))")
 
         if src.scale != 1.0
             vx = vx .* src.scale
@@ -182,8 +186,8 @@ function load_data(src::NetCDFVelocity, filename::String)
         end
 
         # Create coordinate grids (equivalent to MATLAB's ndgrid)
-        xx = repeat(x, 1, length(y))
-        yy = repeat(y', length(x), 1)
+        xx = repeat(vel_x, 1, length(vel_y))
+        yy = repeat(vel_y', length(vel_x), 1)
 
         return (xx = xx, yy = yy, vx = vx, vy = vy)
     finally

@@ -36,12 +36,14 @@ function init_bedmachine(params)
     h = bm.thickness
     s = bm.surface
 
+    @info "BedMachine axes" size(bed) x_first = x[1] x_last = x[end] y_first = y[1] y_last = y[end]
+
     # Flip arrays for correct orientation
-    bed = reverse(bed, dims = 1)
-    geoid = reverse(geoid, dims = 1)
-    mask = reverse(mask, dims = 1)
-    s = reverse(s, dims = 1)
-    h = reverse(h, dims = 1)
+    bed = reverse(bed, dims = 2)
+    geoid = reverse(geoid, dims = 2)
+    mask = reverse(mask, dims = 2)
+    s = reverse(s, dims = 2)
+    h = reverse(h, dims = 2)
 
     # Create rock mask (mask=1 in BedMachine v3 indicates rock
     rockmask = zeros(size(mask))
@@ -107,7 +109,7 @@ function init_bedmachine(params)
     )
 
     # Set surfType based on aground mask
-    surfType_calc = (Gh.aground .* 1) .+ ((.!Gh.aground .& (Gh.h .> 0.0)) .* 2) .+ (Gh.rockmask .* 3)
+    surfType_calc = (Gh.aground .* 1) .+ ((.!Gh.aground .& (Gh.h .> 0.0)) .* 2) .+ (Gh.rockmask .* 3) # 1 grounded, 2 floating, 3 rock, 0 none
     Gh = merge(Gh, (surfType = surfType_calc,))
 
     # Recalculate ice and rock with updated surfType
