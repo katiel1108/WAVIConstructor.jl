@@ -77,13 +77,13 @@ A `NamedTuple`: `(bed, x, y, geoid, mask, thickness, surface)`
 function load_data(::BedMachineV3, filename::String)
     ds = NCDataset(filename)
     try
-        bed = Array(ds["bed"])
+        bed = _missing_to_nan(Array(ds["bed"]))
         x = Array(ds["x"])
         y = Array(ds["y"])
-        geoid = Array(ds["geoid"])
-        mask = Array(ds["mask"])
-        surface = Array(ds["surface"])
-        thickness = Array(ds["thickness"])
+        geoid = _missing_to_nan(Array(ds["geoid"]))
+        mask = Int.(coalesce.(Array(ds["mask"]), 0))
+        surface = _missing_to_nan(Array(ds["surface"]))
+        thickness = _missing_to_nan(Array(ds["thickness"]))
         return (
             bed = bed, x = x, y = y, geoid = geoid, mask = mask,
             thickness = thickness, surface = surface,
