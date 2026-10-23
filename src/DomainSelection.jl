@@ -94,7 +94,10 @@ function select_domain_wavi(Gh, Gu, Gv, Gc, params)
     # MATLAB conv2([1 1]', 1, A) expands first dimension by 1
     if gu_size[1] == gh_mask_size[1] + 1 && gu_size[2] == gh_mask_size[2]
         # Standard case: U-grid has one more row than H-grid
-        Gu_mask = [Gh_mask[1:(end - 1), :] .| Gh_mask[2:end, :]; Gh_mask[end:end, :]]
+        
+        #Gu_mask = [Gh_mask[1:(end - 1), :] .| Gh_mask[2:end, :]; Gh_mask[end:end, :]]
+        Gu_mask = vcat(Gh_mask[1:1, :], Gh_mask[1:end-1, :] .| Gh_mask[2:end, :], Gh_mask[end:end, :])   # (nx+1, ny)
+
     else
         # Fall back to resizing
         Gu_mask = falses(gu_size)
@@ -105,7 +108,10 @@ function select_domain_wavi(Gh, Gu, Gv, Gc, params)
     # MATLAB conv2(1, [1 1], A) expands second dimension by 1
     if gv_size[1] == gh_mask_size[1] && gv_size[2] == gh_mask_size[2] + 1
         # Standard case: V-grid has one more column than H-grid
-        Gv_mask = [Gh_mask[:, 1:(end - 1)] .| Gh_mask[:, 2:end] Gh_mask[:, end:end]]
+        
+        #Gv_mask = [Gh_mask[:, 1:(end - 1)] .| Gh_mask[:, 2:end] Gh_mask[:, end:end]]
+        Gv_mask = hcat(Gh_mask[:, 1:1], Gh_mask[:, 1:end-1] .| Gh_mask[:, 2:end], Gh_mask[:, end:end])   # (nx, ny+1)
+        
     else
         # Fall back to resizing
         Gv_mask = falses(gv_size)
@@ -204,6 +210,8 @@ function select_domain_wavi(Gh, Gu, Gv, Gc, params)
             n = Gc_n,
         )
     )
+
+    println("Gh.mask ", size(Gh_mask), "  Gu.xx ", size(Gu.xx), "  Gu_mask ", size(Gu_mask), "  rockEdges ", size(Gu_rockEdges))
 
     return Gh, Gu, Gv, Gc
 end
