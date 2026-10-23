@@ -45,7 +45,7 @@ Use `NoData()` for optional categories you want to skip.
 - `min_thick::Float64`: Minimum ice thickness in m
 
 ## Processing Parameters
-- `sub_samp::Int`: Velocity subsampling factor
+- `sub_samp::Float64`: Velocity subsampling factor
 """
 Base.@kwdef struct ConstructorParams
     # ── Data sources (SourceConfig per category) ─────────────────────
@@ -72,7 +72,7 @@ Base.@kwdef struct ConstructorParams
     min_thick::Float64 = 50.0
 
     # ── Processing parameters ────────────────────────────────────────
-    sub_samp::Int = 8
+    sub_samp::Float64 = 8.0
 end
 
 """

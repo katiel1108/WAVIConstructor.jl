@@ -73,8 +73,8 @@ function init_bedmachine(params)
     domain_half_width = 2819  # Half-width in grid points
     domain_half_height = 2419  # Half-height in grid points
 
-    isub = i_pole .+ 2 * sub_samp .* (-floor(Int, (domain_half_width * 2) / (2 * sub_samp)):floor(Int, (domain_half_width * 2) / (2 * sub_samp)))
-    jsub = j_pole .+ 2 * sub_samp .* (-floor(Int, (domain_half_height * 2) / (2 * sub_samp)):floor(Int, (domain_half_height * 2) / (2 * sub_samp)))
+    isub = Int.(i_pole .+ 2 * sub_samp .* (-floor(Int, (domain_half_width * 2) / (2 * sub_samp)):floor(Int, (domain_half_width * 2) / (2 * sub_samp))))
+    jsub = Int.(j_pole .+ 2 * sub_samp .* (-floor(Int, (domain_half_height * 2) / (2 * sub_samp)):floor(Int, (domain_half_height * 2) / (2 * sub_samp))))
 
     # Subsample all arrays
     bed = bed[isub, jsub]
@@ -332,12 +332,13 @@ function load_velocity_data(Gu, Gv, Gh, params)
     end
 
     # Apply subsampling
-    if sub_samp < 1.0
+    if sub_samp <= 1.0
         xx_v = xx_v[1:1:end, 1:1:end]
         yy_v = yy_v[1:1:end, 1:1:end]
         vx = vx[1:1:end, 1:1:end]
         vy = vy[1:1:end, 1:1:end]
     else
+        sub_samp = Int(sub_samp)
         xx_v = xx_v[1:sub_samp:end, 1:sub_samp:end]
         yy_v = yy_v[1:sub_samp:end, 1:sub_samp:end]
         vx = vx[1:sub_samp:end, 1:sub_samp:end]
