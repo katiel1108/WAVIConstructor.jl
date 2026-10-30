@@ -102,7 +102,7 @@ Load temperature and coordinate data from a BISICLES NetCDF file.
 # Returns
 A `NamedTuple`: `(temps, xx, yy, sigma)` — same shape as `load_data(::FrankTemps, …)`.
 """
-function load_data(::BISICLESTemps, filename::String; scale_xy::Real = 1)
+function load_data(::BISICLESTemps, filename::String; scale_xy::Real = 1000)
     ds = NCDataset(filename)
     try
         bisicles_sigma = vec(Array(ds["sigma"]))
@@ -582,25 +582,20 @@ before interpolation.
 function interpolate_temperature(::BISICLESTemps, temp_data, Gh)
     temps_raw = copy(temp_data.temps)       # copy so we can NaN-mask in place
     sigmas = temp_data.sigma
-
     bisicles_yy = repeat(temp_data.yy, 1, length(temp_data.xx))
     bisicles_xx = repeat(temp_data.xx', length(temp_data.yy), 1)
-
     temperature = zeros(length(sigmas), Gh.nx, Gh.ny)
-
-    for i in 1:length(sigmas)
+for i in 1:length(sigmas)
         ocean_mask = temps_raw[i, :, :] .> 273.148
         temps_raw[i, ocean_mask] .= NaN
-
         this_temp = temps_raw[i, :, :]
         valid_mask = .!isnan.(this_temp)
         xx_valid = bisicles_xx[valid_mask]
         yy_valid = bisicles_yy[valid_mask]
         temp_valid = this_temp[valid_mask]
-
         temperature[i, :, :] = interpolate_to_grid(xx_valid, yy_valid, temp_valid, Gh.xx, Gh.yy)
-    end
-    return temperature, sigmas
+end
+return temperature, sigmas
 end
 
 # ── NoData fallback methods ───────────────────────────────────────────
