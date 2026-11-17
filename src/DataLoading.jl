@@ -104,6 +104,7 @@ A `NamedTuple`: `(temps, xx, yy, sigma)` — same shape as `load_data(::FrankTem
 """
 function load_data(::BISICLESTemps, filename::String; scale_xy::Real = 1000)
     ds = NCDataset(filename)
+    println(scale_xy)
     try
         bisicles_sigma = vec(Array(ds["sigma"]))
         bisicles_temps = Array(ds["T"])
@@ -387,6 +388,61 @@ function load_data(::SmithDhdt, smith_dir::String; grnd_file = nothing, flt_file
             grnd_xx = fxx, grnd_yy = fyy, grnd_dhdt = zeros(size(fdhdt)),
             flt_xx = fxx, flt_yy = fyy, flt_dhdt = fdhdt,
         )
+    end
+end
+
+function load_data(src::NetCDFDhDt, filename::String)
+    ds = NCDataset(filename)
+    try
+        for name in (src.x_name, src.y_name, src.dhdt_name)
+            haskey(ds, name) || error(
+                "Variable \"$name\" not found in $filename. " *
+                "Available variables: $(join(keys(ds), ", "))")
+        end
+
+        v      = ds[src.dhdt_name]
+        dnames = collect(String.(dimnames(v)))
+        x      = Array(ds[src.x_name])
+        y      = Array(ds[src.y_name])
+
+        # ── choose the time slice ────────────────────────────────────────
+        if src.time_name in dnames
+            tpos = findfirst(==(src.time_name), dnames)
+            nt   = size(v, tpos)
+            1 <= src.time_index <= nt ||
+                error("time_index = $(src.time_index) is outside 1:$nt for \"$(src.dhdt_name)\"")
+            idx = ntuple(i -> i == tpos ? src.time_index : Colon(), length(dnames))
+            d   = v[idx...]
+            remaining = [n for (i, n) in enumerate(dnames) if i != tpos]
+            if haskey(ds, src.time_name)
+                @info "dhdt: using time index $(src.time_index) of $nt (time = $(ds[src.time_name][src.time_index]))"
+            end
+        else
+            d = Array(v)
+            remaining = dnames
+            @info "dhdt variable has no \"$(src.time_name)\" dimension; time_index is ignored"
+        end
+        d = _missing_to_nan(Array(d))
+
+        # ── make sure the array is (x, y) ────────────────────────────────
+        if remaining == [src.x_name, src.y_name]
+            # already (x, y)
+        elseif remaining == [src.y_name, src.x_name]
+            d = permutedims(d)
+        else
+            error("Cannot match the dimensions $remaining of \"$(src.dhdt_name)\" to " *
+                  "x = \"$(src.x_name)\" and y = \"$(src.y_name)\". Check x_name and y_name.")
+        end
+        size(d) == (length(x), length(y)) ||
+            error("dhdt has size $(size(d)), expected ($(length(x)), $(length(y)))")
+
+        src.scale != 1.0 && (d = d .* src.scale)
+
+        xx = repeat(x, 1, length(y))
+        yy = repeat(y', length(x), 1)
+        return (xx = xx, yy = yy, dhdt = d)
+    finally
+        close(ds)
     end
 end
 

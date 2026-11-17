@@ -16,7 +16,7 @@ export BedSource, SurfaceTempSource, TemperatureSource, VelocitySource
 export AccumulationSource, DhDtSource, BasinSource
 # Concrete source singletons
 export BedMachineV3, ALBMAPv1, FrankTemps, BISICLESTemps
-export MEaSUREs, NetCDFVelocity, ArthernAccumulation, SmithDhdt, ZwallyBasins
+export MEaSUREs, NetCDFVelocity, ArthernAccumulation, SmithDhdt, ZwallyBasins, NetCDFDhDt
 # Cross-cutting sentinel
 export NoData
 
@@ -110,6 +110,18 @@ default_path(::ArthernAccumulation) = "Data/amsr_accumulation_map.txt"
 """Smith et al. 2020 dh/dt elevation-change rates."""
 struct SmithDhdt <: DhDtSource end
 default_path(::SmithDhdt) = "Data/Smith_2020_dhdt"
+
+"""Generic NetCDF surface-elevation-change (dh/dt) source with configurable names."""
+Base.@kwdef struct NetCDFDhDt <: DhDtSource
+    dhdt_name::String = "dhdt"
+    x_name::String    = "x"
+    y_name::String    = "y"
+    time_name::String = "time"      # name of the time dimension
+    time_index::Int   = 1           # which time slice to use (1-based)
+    scale::Float64    = 1.0         # multiplier to convert the data to m/yr
+    floating_hydrostatic::Bool = false   # convert surface change to thickness change on floating ice
+end
+default_path(::NetCDFDhDt) = "Data/dhdt.nc"  
 
 """Zwally drainage basins."""
 struct ZwallyBasins <: BasinSource end

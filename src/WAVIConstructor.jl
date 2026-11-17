@@ -17,7 +17,7 @@ using .DataSources: DataSource, SourceConfig, default_path, NoData,
     BedSource, SurfaceTempSource, TemperatureSource, VelocitySource,
     AccumulationSource, DhDtSource, BasinSource,
     BedMachineV3, ALBMAPv1, FrankTemps, BISICLESTemps,
-    MEaSUREs, NetCDFVelocity, ArthernAccumulation, SmithDhdt, ZwallyBasins
+    MEaSUREs, NetCDFVelocity, ArthernAccumulation, SmithDhdt, ZwallyBasins, NetCDFDhDt
 using .DataLoading: load_data, interpolate_to_grid, interpolate_temperature
 using .OutputWriting: write_output, write_binary_files, write_netcdf_file
 
@@ -27,7 +27,7 @@ export DataSource, SourceConfig, default_path, NoData
 export BedSource, SurfaceTempSource, TemperatureSource, VelocitySource
 export AccumulationSource, DhDtSource, BasinSource
 export BedMachineV3, ALBMAPv1, FrankTemps, BISICLESTemps
-export MEaSUREs, NetCDFVelocity, ArthernAccumulation, SmithDhdt, ZwallyBasins
+export MEaSUREs, NetCDFVelocity, ArthernAccumulation, SmithDhdt, ZwallyBasins, NetCDFDhDt
 export load_data, interpolate_to_grid, interpolate_temperature
 export write_output, write_binary_files, write_netcdf_file
 

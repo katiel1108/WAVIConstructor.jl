@@ -123,38 +123,10 @@ function init_bedmachine(params)
 
     # Load dhdt data via dispatch
     dhdt_source = get(params, :dhdt_source, SmithDhdt())
-    dhdt_file = get(params, :dhdt_file, default_path(SmithDhdt()))
-    smith_data = load_data(dhdt_source, dhdt_file)
-
-    if smith_data !== nothing
-        # Interpolate grounded data
-        fdhdt_grnd = .!isnan.(smith_data.grnd_dhdt)
-        dhdt_grnd = interpolate_to_grid(
-            smith_data.grnd_xx[fdhdt_grnd][:],
-            smith_data.grnd_yy[fdhdt_grnd][:],
-            smith_data.grnd_dhdt[fdhdt_grnd][:],
-            Gh.xx, Gh.yy
-        )
-
-        # Interpolate floating data
-        fdhdt_flt = .!isnan.(smith_data.flt_dhdt)
-        dhdt_flt = interpolate_to_grid(
-            smith_data.flt_xx[fdhdt_flt][:],
-            smith_data.flt_yy[fdhdt_flt][:],
-            smith_data.flt_dhdt[fdhdt_flt][:],
-            Gh.xx, Gh.yy
-        )
-
-        # Combine based on surfType: floating (2) uses flt, grounded (1 or 4) uses grnd
-        dhdt = zeros(size(Gh.surfType))
-        dhdt[Gh.surfType .== 2] .= dhdt_flt[Gh.surfType .== 2]
-        dhdt[(Gh.surfType .== 1) .| (Gh.surfType .== 4)] .= dhdt_grnd[(Gh.surfType .== 1) .| (Gh.surfType .== 4)]
-
-        Gh = merge(Gh, (dhdt = dhdt,))
-    else
-        # NoData or files not found — use zeros
-        Gh = merge(Gh, (dhdt = zeros(size(Gh.surfType)),))
-    end
+    dhdt_file   = get(params, :dhdt_file, default_path(SmithDhdt()))
+    dhdt_data   = load_data(dhdt_source, dhdt_file)
+    dhdt = dhdt_data === nothing ? zeros(size(Gh.surfType)) : grid_dhdt(dhdt_source, dhdt_data, Gh, params)
+    Gh = merge(Gh, (dhdt = dhdt,))
 
     # Add aliases for compatibility with SelectDomainWAVI
     Gh = merge(
@@ -399,5 +371,46 @@ function load_temperature_data(Gh, params)
     Gh = merge(Gh, (levels = (temperature = temperature, sigmas = sigmas),))
     return Gh
 end
+
+function grid_dhdt(::SmithDhdt, data, Gh, params)
+    fdhdt_grnd = .!isnan.(data.grnd_dhdt)
+    dhdt_grnd = interpolate_to_grid(
+        data.grnd_xx[fdhdt_grnd][:], data.grnd_yy[fdhdt_grnd][:],
+        data.grnd_dhdt[fdhdt_grnd][:], Gh.xx, Gh.yy)
+
+    fdhdt_flt = .!isnan.(data.flt_dhdt)
+    dhdt_flt = interpolate_to_grid(
+        data.flt_xx[fdhdt_flt][:], data.flt_yy[fdhdt_flt][:],
+        data.flt_dhdt[fdhdt_flt][:], Gh.xx, Gh.yy)
+
+    dhdt = zeros(size(Gh.surfType))
+    dhdt[Gh.surfType .== 2] .= dhdt_flt[Gh.surfType .== 2]
+    grnd = (Gh.surfType .== 1) .| (Gh.surfType .== 4)
+    dhdt[grnd] .= dhdt_grnd[grnd]
+    return dhdt
+end
+
+# New: one NetCDF field covering grounded and floating ice
+function grid_dhdt(src::NetCDFDhDt, data, Gh, params)
+    valid = .!isnan.(data.dhdt)
+    any(valid) || error("The dhdt file contains no valid data in the selected time slice")
+    d = interpolate_to_grid(data.xx[valid][:], data.yy[valid][:], data.dhdt[valid][:], Gh.xx, Gh.yy)
+
+    dhdt = zeros(size(Gh.surfType))
+    ice  = (Gh.surfType .== 1) .| (Gh.surfType .== 2) .| (Gh.surfType .== 4)
+    dhdt[ice] .= d[ice]                      # NaN is kept where there is no data: the data mask relies on this
+
+    if src.floating_hydrostatic
+        # Floating ice in hydrostatic equilibrium: ds/dt = (1 - rho_i/rho_w) dh/dt
+        rho_i = get(params, :density_ice, 918.0)
+        rho_w = get(params, :density_ocean, 1028.0)
+        flt = Gh.surfType .== 2
+        dhdt[flt] .*= rho_w / (rho_w - rho_i)
+    end
+    return dhdt
+end
+
+# Skipped dataset
+grid_dhdt(::NoData, data, Gh, params) = zeros(size(Gh.surfType))
 
 end # module InitBedMachine
